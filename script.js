@@ -5,6 +5,10 @@ const searchInput = document.getElementById('searchInput');
 const searchButton = document.getElementById('searchButton');
 const searchSuggestions = document.getElementById('searchSuggestions');
 
+let nextPageToken = '';
+let isLoading = false;
+
+
 let debounceTimer;
 // console.log('API_KEY >> ',API_KEY)
 // Debounce function to limit API calls
@@ -12,6 +16,28 @@ const debounce = (func, delay) => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(func, delay);
 };
+
+function throttle(func, delay) {
+  let lastCall = 0;
+  return function() {
+    const now = new Date().getTime();
+    if (now - lastCall >= delay) {
+      func();
+      lastCall = now;
+    }
+  };
+}
+
+const checkScroll = throttle(() => {
+  const scrollPosition = window.innerHeight + window.scrollY;
+  const pageHeight = document.documentElement.scrollHeight - 300; // 300px buffer
+  
+  if (scrollPosition >= pageHeight && !isLoading && nextPageToken) {
+    fetchPopularVid();
+  }
+}, 500); // Check at most every 500ms
+
+window.addEventListener('scroll', checkScroll);
 
 // Fetch search suggestions
 const fetchSuggestions = async (query) => {
@@ -69,12 +95,14 @@ const searchVideos = async (query) => {
 };
 
 
-// In your displaySearchResults function:
-const displaySearchResults = (videos) => {
+const displaySearchResults = (videos, shouldAppend = false) => {
+  if (!shouldAppend) {
     vidContainer.innerHTML = "";
+  }
 
-    videos.forEach(video => {
-        const { thumbnails, title, channelTitle, publishedAt } = video.snippet;
+  videos.forEach(video => {
+    // Your existing video card creation code
+    const { thumbnails, title, channelTitle, publishedAt } = video.snippet;
         const videoId = video.id.videoId || video.id; // Fixed ID access
 
         const vidCard = document.createElement('div');
@@ -106,8 +134,12 @@ const displaySearchResults = (videos) => {
             });
         });
 
-        vidContainer.appendChild(vidCard);
-    });
+    vidContainer.appendChild(vidCard);
+  });
+  
+  // Show/hide loading indicator
+  document.getElementById('loading').style.display = 
+    nextPageToken ? 'block' : 'none';
 };
 
 // Event listeners
@@ -134,21 +166,36 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Initial load of popular videos
-const fetchPopularVid = () => {
-    fetch(`${BASE_URL}/videos?part=snippet,contentDetails,statistics&chart=mostPopular&regionCode=IN&maxResults=20&key=${API_KEY}`)
-        .then(response => response.json())
-        .then(data => {
-            // Modify items to match search result structure
-            const modifiedItems = data.items.map(item => ({
-                id: { videoId: item.id },
-                snippet: item.snippet
-            }));
-            displaySearchResults(modifiedItems);
-        })
-        .catch(error => {
-            console.error('Error fetching videos:', error);
-        });
+
+
+const fetchPopularVid = async () => {
+  if (isLoading) return;
+  console.log('nextPageToken >> ',nextPageToken)
+  isLoading = true;
+  
+  try {
+    const url = `${BASE_URL}/videos?part=snippet&chart=mostPopular&maxResults=20${
+      nextPageToken ? `&pageToken=${nextPageToken}` : ''
+    }&key=${API_KEY}`;
+    
+    const response = await fetch(url);
+    const data = await response.json();
+    
+    nextPageToken = data.nextPageToken || '';
+    const modifiedItems = data.items.map(item => ({
+      id: { videoId: item.id },
+      snippet: item.snippet
+    }));
+    
+    displaySearchResults(modifiedItems, !!nextPageToken);
+  } catch (error) {
+    console.error('Error loading more videos:', error);
+  } finally {
+    isLoading = false;
+  }
 };
 
-fetchPopularVid();
+
+// Load first batch of videos when page loads
+window.addEventListener('DOMContentLoaded', fetchPopularVid);
+// fetchPopularVid();
