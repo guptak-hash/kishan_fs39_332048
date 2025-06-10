@@ -6,7 +6,7 @@ const searchButton = document.getElementById('searchButton');
 const searchSuggestions = document.getElementById('searchSuggestions');
 
 let debounceTimer;
-console.log('API_KEY >> ',API_KEY)
+// console.log('API_KEY >> ',API_KEY)
 // Debounce function to limit API calls
 const debounce = (func, delay) => {
     clearTimeout(debounceTimer);
@@ -68,13 +68,14 @@ const searchVideos = async (query) => {
     }
 };
 
-// Display search results
+
+// In your displaySearchResults function:
 const displaySearchResults = (videos) => {
     vidContainer.innerHTML = "";
 
     videos.forEach(video => {
         const { thumbnails, title, channelTitle, publishedAt } = video.snippet;
-        const videoId = video.id.videoId;
+        const videoId = video.id.videoId || video.id; // Fixed ID access
 
         const vidCard = document.createElement('div');
         vidCard.classList.add('vid-card');
@@ -89,13 +90,20 @@ const displaySearchResults = (videos) => {
 
         vidCard.addEventListener('click', () => {
             vidContainer.innerHTML = `
-                <iframe width="100%" height="315"
-                    src="https://www.youtube.com/embed/${videoId}?autoplay=1"
-                    frameborder="0" allow="accelerometer; autoplay; clipboard-write;
-                    encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowfullscreen>
-                </iframe>
+                <div class="video-player">
+                    <iframe width="100%" height="315"
+                        src="https://www.youtube.com/embed/${videoId}?enablejsapi=1"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen>
+                    </iframe>
+                </div>
+                <button id="back-button">Back</button>
             `;
+            
+            document.getElementById('back-button').addEventListener('click', () => {
+                displaySearchResults(videos);
+            });
         });
 
         vidContainer.appendChild(vidCard);
