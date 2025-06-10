@@ -1,13 +1,12 @@
-require('dotenv').config()
+import {API_KEY} from './config.js'
 const BASE_URL = 'https://www.googleapis.com/youtube/v3';
 const vidContainer = document.querySelector('.content-container');
 const searchInput = document.getElementById('searchInput');
 const searchButton = document.getElementById('searchButton');
 const searchSuggestions = document.getElementById('searchSuggestions');
-const API_KEY=process.env.API_KEY;
 
 let debounceTimer;
-
+console.log('API_KEY >> ',API_KEY)
 // Debounce function to limit API calls
 const debounce = (func, delay) => {
     clearTimeout(debounceTimer);
