@@ -4,7 +4,23 @@ const vidContainer = document.querySelector('.content-container');
 const searchInput = document.getElementById('searchInput');
 const searchButton = document.getElementById('searchButton');
 const searchSuggestions = document.getElementById('searchSuggestions');
-const API_KEY = window.API_KEY || process.env.YOUTUBE_API_KEY;
+
+// Get API key from either config.js or Vercel's environment variables
+const API_KEY = window.YOUTUBE_API_KEY || import.meta.env.VITE_YOUTUBE_API_KEY;
+
+// If neither exists, show error
+if (!API_KEY) {
+  console.error('YouTube API key not found!');
+  // Show user-friendly error message in UI
+  document.body.innerHTML = `
+    <div style="padding: 20px; color: red;">
+      Error: API configuration missing. Please contact support.
+    </div>
+  `;
+}
+
+// const BASE_URL = 'https://www.googleapis.com/youtube/v3';
+// Rest of your code...
 
 let nextPageToken = '';
 let isLoading = false;
